@@ -30,6 +30,9 @@ import kotlin.Triple;
 
 public class ListVehicleTrackFragment extends BottomSheetDialogFragment {
 
+
+
+    // Thêm phương thức newInstance để tạo đối tượng với các tham số
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 

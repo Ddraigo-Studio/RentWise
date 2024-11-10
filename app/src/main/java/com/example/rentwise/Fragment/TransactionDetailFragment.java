@@ -1,5 +1,6 @@
 package com.example.rentwise.Fragment;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,10 +21,13 @@ import com.example.rentwise.ModelData.Motobike;
 import com.example.rentwise.R;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
-public class TransactionDetailFragment extends BottomSheetDialogFragment implements ChooseItemFragment.OnItemSelectedListener{
+public class TransactionDetailFragment extends BottomSheetDialogFragment implements ChooseItemFragment.OnItemSelectedListener {
 
     private static final String ARG_TRANSACTION_ID = "transactionId";
     private static final String ARG_ID_CUSTOMER = "idCustomer";
@@ -31,6 +35,7 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
     private static final String ARG_START_DAY = "startDay";
     private static final String ARG_END_DAY = "endDay";
     private static final String ARG_ZONE_RENT = "zoneRent";
+    private final Calendar calendar = Calendar.getInstance();
 
     private String transactionId;
     private String idCustomer;
@@ -41,8 +46,7 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
 
     private FirebaseRepository<Transaction> transactionRepository;
     private FirebaseRepository<Motobike> motobikeRepository;
-    private EditText edtCusId, edtVehId, edtTranStartDay, edtTranEndDay, edtTranZone;
-
+    private EditText edtCusId, edtVehId, edtTranStartDay2, edtTranEndDay2, edtTranZone;
 
     public static TransactionDetailFragment newInstance(String transactionId, String idCustomer, String idMotobike, String startDay, String endDay, String zoneRent) {
         TransactionDetailFragment fragment = new TransactionDetailFragment();
@@ -80,15 +84,19 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
         // Initialize EditTexts
         edtCusId = view.findViewById(R.id.edtCusId3);
         edtVehId = view.findViewById(R.id.edtVehId3);
-        edtTranStartDay = view.findViewById(R.id.edtTranStartDay2);
-        edtTranEndDay = view.findViewById(R.id.edtTranEndDay2);
+        edtTranStartDay2 = view.findViewById(R.id.edtTranStartDay2);
+        edtTranEndDay2 = view.findViewById(R.id.edtTranEndDay2);
         edtTranZone = view.findViewById(R.id.edtTranZone2);
+
+        // Set date pickers
+        edtTranStartDay2.setOnClickListener(v -> showDatePickerDialog(edtTranStartDay2));
+        edtTranEndDay2.setOnClickListener(v -> showDatePickerDialog(edtTranEndDay2));
 
         // Set initial text values
         edtCusId.setText(idCustomer);
         edtVehId.setText(idMotobike);
-        edtTranStartDay.setText(startDay);
-        edtTranEndDay.setText(endDay);
+        edtTranStartDay2.setText(startDay);
+        edtTranEndDay2.setText(endDay);
         edtTranZone.setText(zoneRent);
 
         // Set click listeners to open ChooseItemFragment for selection
@@ -105,6 +113,21 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
         return view;
     }
 
+    private void showDatePickerDialog(EditText dateField) {
+        new DatePickerDialog(requireContext(), (view, year, month, dayOfMonth) -> {
+            calendar.set(Calendar.YEAR, year);
+            calendar.set(Calendar.MONTH, month);
+            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            updateDateField(dateField);
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    // Update date field with selected date
+    private void updateDateField(EditText dateField) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        dateField.setText(sdf.format(calendar.getTime()));
+    }
+
     private void openChooseItemFragment(String type) {
         ChooseItemFragment chooseItemFragment = ChooseItemFragment.newInstance(type);
         chooseItemFragment.setTargetFragment(this, 0); // Set this fragment as the target
@@ -113,7 +136,6 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
 
     @Override
     public void onItemSelected(Object selectedItem) {
-        // Check the type of the selected item and update the corresponding field
         if (selectedItem instanceof Customer) {
             Customer customer = (Customer) selectedItem;
             edtCusId.setText(customer.getCccd()); // Update customer ID field
@@ -133,14 +155,12 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
     }
 
     private void saveTransactionChanges() {
-        // Collect updated data from EditText fields
         String updatedCustomerID = edtCusId.getText().toString().trim();
         String updatedVehicleID = edtVehId.getText().toString().trim();
-        String updatedStartDay = edtTranStartDay.getText().toString().trim();
-        String updatedEndDay = edtTranEndDay.getText().toString().trim();
+        String updatedStartDay = edtTranStartDay2.getText().toString().trim();
+        String updatedEndDay = edtTranEndDay2.getText().toString().trim();
         String updatedZone = edtTranZone.getText().toString().trim();
 
-        // Prepare a map with the updated values
         Map<String, Object> updates = new HashMap<>();
         updates.put("idCustomer", updatedCustomerID);
         updates.put("idMotobike", updatedVehicleID);
@@ -148,7 +168,6 @@ public class TransactionDetailFragment extends BottomSheetDialogFragment impleme
         updates.put("endDay", updatedEndDay);
         updates.put("zoneRent", updatedZone);
 
-        // Update in Firebase
         transactionRepository.update(transactionId, updates, new FirebaseRepository.OnOperationListener() {
             @Override
             public void onSuccess(String message) {
